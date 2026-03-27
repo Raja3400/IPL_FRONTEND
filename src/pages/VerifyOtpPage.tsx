@@ -42,7 +42,7 @@ export function VerifyOtpPage() {
         const response = await authService.verifyOtp({ mobileNumber, otp: otp.trim() });
         await signIn(response.accessToken);
       }
-      navigate("/dashboard", { replace: true });
+      navigate("/", { replace: true });
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : requestError instanceof Error ? requestError.message : "Unable to verify OTP");
     } finally {
@@ -83,3 +83,4 @@ export function VerifyOtpPage() {
     </section>
   );
 }
+
