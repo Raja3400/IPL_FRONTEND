@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -79,4 +79,5 @@ describe("TournamentLeaderboardPage", () => {
     await waitFor(() => expect(screen.getByText(/Tournament leaderboard is not available until scored predictions exist/i)).toBeInTheDocument());
   });
 });
+
 
