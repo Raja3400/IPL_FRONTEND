@@ -479,3 +479,4 @@ button, input, select, textarea { font: inherit; outline: none; }
 .player-role { color: var(--brand-primary); font-size: 0.8rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
 .admin-result-card__eyebrow { color: var(--brand-primary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; margin-bottom: 0.5rem; }
 .admin-result-card__header { margin-bottom: 1rem; }
+
