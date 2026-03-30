@@ -29,7 +29,7 @@ const mockMatch = {
   venue: { id: 1, name: "Wankhede Stadium", city: "Mumbai", country: "India" },
   players: [
     { id: 1, fullName: "Rohit Sharma", teamId: 1, teamCode: "MI", role: "BATTER" },
-    { id: 2, fullName: "Ishan Kishan", teamId: 1, teamCode: "MI", role: "WICKET_KEEPER" },
+    { id: 2, fullName: "Jasprit Bumrah", teamId: 1, teamCode: "MI", role: "BOWLER" },
     { id: 13, fullName: "Ruturaj Gaikwad", teamId: 2, teamCode: "CSK", role: "BATTER" },
     { id: 18, fullName: "MS Dhoni", teamId: 2, teamCode: "CSK", role: "WICKET_KEEPER" }
   ]
@@ -100,11 +100,13 @@ describe("PredictionPanel", () => {
     const panel = await screen.findByTestId("prediction-panel");
     expect(within(panel).getByText(/Make your match prediction/i)).toBeInTheDocument();
     expect(within(panel).getByLabelText(/^Match winner$/i)).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: /^Highest run scorer: Select player$/i })).toBeInTheDocument();
     expect(within(panel).getByLabelText(/^MI predicted score$/i)).toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: /^Submit prediction$/i })).toBeInTheDocument();
+    expect(within(panel).getByText(/Batter/i)).toBeInTheDocument();
   });
 
-  it("submits a new prediction", async () => {
+  it("shows icons, player names, and team names inside the custom player dropdown", async () => {
     const user = userEvent.setup();
     vi.mocked(predictionService.getPredictionForMatch).mockRejectedValue(new ApiError("Prediction not found", 404));
     vi.mocked(predictionService.createPrediction).mockResolvedValue(existingPrediction);
@@ -115,23 +117,56 @@ describe("PredictionPanel", () => {
 
     await waitFor(() => expect(within(panel).getByRole("button", { name: /^Submit prediction$/i })).toBeInTheDocument());
 
+    const runScorerTrigger = within(panel).getByRole("button", { name: /^Highest run scorer: Select player$/i });
+    await user.click(runScorerTrigger);
+
+    const runScorerList = within(panel).getByRole("listbox", { name: /^Highest run scorer$/i });
+    const rohitOption = within(runScorerList).getByRole("option", { name: /Rohit Sharma/i });
+    const dhoniOption = within(runScorerList).getByRole("option", { name: /MS Dhoni/i });
+
+    expect(within(rohitOption).getByText(/Rohit Sharma/i)).toBeInTheDocument();
+    expect(within(rohitOption).getByText(/MI - Batter/i)).toBeInTheDocument();
+    expect(within(dhoniOption).getByText(/CSK - Wicket Keeper/i)).toBeInTheDocument();
+    expect(rohitOption.querySelector("svg")).not.toBeNull();
+
+    await user.click(rohitOption);
+    expect(within(panel).getByRole("button", { name: /Highest run scorer: Rohit Sharma, MI, Batter/i })).toBeInTheDocument();
+
     await user.selectOptions(within(panel).getByLabelText(/^Match winner$/i), "1");
     await user.selectOptions(within(panel).getByLabelText(/^Toss winner$/i), "2");
-    await user.selectOptions(within(panel).getByLabelText(/^Highest run scorer$/i), "1");
-    await user.selectOptions(within(panel).getByLabelText(/^Highest wicket taker$/i), "2");
-    await user.selectOptions(within(panel).getByLabelText(/^Most sixes$/i), "1");
-    await user.selectOptions(within(panel).getByLabelText(/^Most fours$/i), "13");
-    await user.selectOptions(within(panel).getByLabelText(/^Most catches$/i), "18");
-    await user.selectOptions(within(panel).getByLabelText(/^Man of the match$/i), "13");
-    await user.selectOptions(within(panel).getByLabelText(/^Longest six$/i), "1");
-    await user.selectOptions(within(panel).getByLabelText(/^Best striker$/i), "13");
+
+    await user.click(within(panel).getByRole("button", { name: /^Highest wicket taker: Select player$/i }));
+    await user.click(within(panel).getByRole("option", { name: /Jasprit Bumrah/i }));
+
+    await user.click(within(panel).getByRole("button", { name: /^Most sixes: Select player$/i }));
+    await user.click(within(panel).getByRole("option", { name: /Rohit Sharma/i }));
+
+    await user.click(within(panel).getByRole("button", { name: /^Most fours: Select player$/i }));
+    await user.click(within(panel).getByRole("option", { name: /Ruturaj Gaikwad/i }));
+
+    await user.click(within(panel).getByRole("button", { name: /^Most catches: Select player$/i }));
+    await user.click(within(panel).getByRole("option", { name: /MS Dhoni/i }));
+
+    await user.click(within(panel).getByRole("button", { name: /^Man of the match: Select player$/i }));
+    await user.click(within(panel).getByRole("option", { name: /Ruturaj Gaikwad/i }));
+
+    await user.click(within(panel).getByRole("button", { name: /^Longest six: Select player$/i }));
+    await user.click(within(panel).getByRole("option", { name: /Rohit Sharma/i }));
+
+    await user.click(within(panel).getByRole("button", { name: /^Best striker: Select player$/i }));
+    await user.click(within(panel).getByRole("option", { name: /Ruturaj Gaikwad/i }));
+
     await user.type(within(panel).getByLabelText(/^MI predicted score$/i), "182");
     await user.type(within(panel).getByLabelText(/^CSK predicted score$/i), "176");
+
+    expect(within(panel).getAllByText(/MI - Batter/i).length).toBeGreaterThan(0);
+    expect(within(panel).getAllByText(/MI - Bowler/i).length).toBeGreaterThan(0);
+
     await user.click(within(panel).getByRole("button", { name: /^Submit prediction$/i }));
 
     await waitFor(() => expect(predictionService.createPrediction).toHaveBeenCalled());
     expect(within(panel).getByText(/Prediction created successfully/i)).toBeInTheDocument();
-  }, 10000);
+  }, 12000);
 
   it("prefills the form when a prediction already exists", async () => {
     vi.mocked(predictionService.getPredictionForMatch).mockResolvedValue(existingPrediction);
@@ -142,6 +177,7 @@ describe("PredictionPanel", () => {
 
     await waitFor(() => expect(within(panel).getByDisplayValue("182")).toBeInTheDocument());
     expect(within(panel).getByDisplayValue("176")).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: /Highest run scorer: Rohit Sharma, MI, Batter/i })).toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: /^Update prediction$/i })).toBeInTheDocument();
   });
 
@@ -158,6 +194,8 @@ describe("PredictionPanel", () => {
     await waitFor(() => expect(within(panel).getByText(/Predictions are locked for this match/i)).toBeInTheDocument());
     expect(within(panel).getByRole("button", { name: /^Update prediction$/i })).toBeDisabled();
     expect(within(panel).getByLabelText(/^Match winner$/i)).toBeDisabled();
+    expect(within(panel).getByRole("button", { name: /Highest run scorer: Rohit Sharma, MI, Batter/i })).toBeDisabled();
   });
 });
+
 

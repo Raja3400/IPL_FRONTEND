@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
 import { predictionService } from "../features/predictions/predictionService";
 import { ApiError } from "../services/apiClient";
-import type { MatchDetail } from "../types/match";
+import type { MatchDetail, MatchPlayer } from "../types/match";
 import type { PredictionRequest, PredictionResponse } from "../types/prediction";
 
 type PredictionFormState = {
@@ -21,6 +21,17 @@ type PredictionFormState = {
   predictedTeam2Score: string;
 };
 
+type RoleKey = MatchPlayer["role"];
+
+type PlayerPickerProps = {
+  label: string;
+  field: keyof PredictionFormState;
+  value: string;
+  options: MatchPlayer[];
+  disabled: boolean;
+  onChange: (field: keyof PredictionFormState, value: string) => void;
+};
+
 const emptyForm: PredictionFormState = {
   predictedWinnerTeamId: "",
   predictedTossWinnerTeamId: "",
@@ -35,6 +46,70 @@ const emptyForm: PredictionFormState = {
   predictedTeam1Score: "",
   predictedTeam2Score: ""
 };
+
+const playerPredictionFields: Array<keyof PredictionFormState> = [
+  "highestRunScorerPlayerId",
+  "highestWicketTakerPlayerId",
+  "mostSixesPlayerId",
+  "mostFoursPlayerId",
+  "mostCatchesPlayerId",
+  "manOfMatchPlayerId",
+  "longestSixPlayerId",
+  "bestStrikerPlayerId"
+];
+
+function RoleIcon({ role, className }: { role: RoleKey; className?: string }) {
+  if (role === "BATTER") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M16.8 2.8 21.2 7.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M7.2 20.5 5 18.3 14.9 8.4 17.1 10.6 7.2 20.5Z" fill="currentColor" />
+        <path d="M4.5 21.5c-.9-.9-.9-2.3 0-3.2l1.1-1.1 2.2 2.2-1.1 1.1c-.9.9-2.3.9-3.2 0Z" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  if (role === "BOWLER") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M8 13.7c2.6-5 6.7-8.7 12.2-10.7-1 2.7-2.5 4.9-4.4 6.6 1.8-.2 3.6.1 5.2.8-1.8 1.9-4 3.1-6.6 3.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="8.5" cy="15.5" r="5" fill="currentColor" />
+        <path d="M5.3 13.3c1.1 1.1 1.9 2.4 2.2 3.9" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M9.5 11.8c1.1 1.1 1.9 2.4 2.2 3.9" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (role === "WICKET_KEEPER") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4.5 6.2c1.8-.8 3.3-.8 4.7 0l1.1 6.8L8 20H4l-1.6-7 2.1-6.8Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M19.5 6.2c-1.8-.8-3.3-.8-4.7 0L13.7 13l2.3 7H20l1.6-7-2.1-6.8Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M9.2 6.2 8 11.4M14.8 6.2l1.2 5.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (role === "ALL_ROUNDER") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M13.5 4.2 18 8.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M8.2 19.8 6.2 17.8l7.7-7.8 2 2.1-7.7 7.7Z" fill="currentColor" />
+        <circle cx="18.2" cy="17.7" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M16.1 16.3c.7.6 1.2 1.4 1.4 2.4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  return <span className={className} aria-hidden="true">.</span>;
+}
+
+const roleLegend: Array<{ key: NonNullable<RoleKey>; label: string }> = [
+  { key: "BATTER", label: "Batter" },
+  { key: "BOWLER", label: "Bowler" },
+  { key: "WICKET_KEEPER", label: "Wicket Keeper" },
+  { key: "ALL_ROUNDER", label: "All-Rounder" }
+];
 
 function toFormState(prediction: PredictionResponse): PredictionFormState {
   return {
@@ -58,6 +133,148 @@ function formatDate(value: string) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function getRoleShortLabel(role: RoleKey) {
+  switch (role) {
+    case "BATTER":
+      return "BAT";
+    case "BOWLER":
+      return "BOWL";
+    case "WICKET_KEEPER":
+      return "WK";
+    case "ALL_ROUNDER":
+      return "AR";
+    default:
+      return "ROLE";
+  }
+}
+
+function getRoleDisplayLabel(role: RoleKey) {
+  switch (role) {
+    case "BATTER":
+      return "Batter";
+    case "BOWLER":
+      return "Bowler";
+    case "WICKET_KEEPER":
+      return "Wicket Keeper";
+    case "ALL_ROUNDER":
+      return "All-Rounder";
+    default:
+      return "Role not specified";
+  }
+}
+
+function PlayerPicker({ label, field, value, options, disabled, onChange }: PlayerPickerProps) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const selectedPlayer = value ? options.find((player) => String(player.id) === value) ?? null : null;
+  const labelId = `${field}-label`;
+  const listboxId = `${field}-listbox`;
+
+  useEffect(() => {
+    if (disabled && open) {
+      setOpen(false);
+    }
+  }, [disabled, open]);
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(playerId: string) {
+    onChange(field, playerId);
+    setOpen(false);
+  }
+
+  return (
+    <div className="field player-picker" ref={rootRef}>
+      <span className="field__label" id={labelId}>{label}</span>
+      <button
+        type="button"
+        className={`input player-picker__trigger${open ? " player-picker__trigger--open" : ""}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`${label}: ${selectedPlayer ? `${selectedPlayer.fullName}, ${selectedPlayer.teamCode}, ${getRoleDisplayLabel(selectedPlayer.role)}` : "Select player"}`}
+        aria-controls={listboxId}
+        onClick={() => setOpen((current) => !current)}
+        disabled={disabled}
+      >
+        {selectedPlayer ? (
+          <span className="player-picker__trigger-content">
+            <span className="player-picker__trigger-icon-wrap">
+              <RoleIcon role={selectedPlayer.role} className="player-picker__trigger-icon" />
+            </span>
+            <span className="player-picker__trigger-copy">
+              <strong>{selectedPlayer.fullName}</strong>
+              <span>{selectedPlayer.teamCode} - {getRoleDisplayLabel(selectedPlayer.role)}</span>
+            </span>
+          </span>
+        ) : (
+          <span className="player-picker__placeholder">Select player</span>
+        )}
+        <span className="player-picker__chevron" aria-hidden="true">v</span>
+      </button>
+      {open ? (
+        <div className="player-picker__dropdown" role="presentation">
+          <ul className="player-picker__list" role="listbox" id={listboxId} aria-label={label}>
+            {options.map((player) => {
+              const isSelected = String(player.id) === value;
+              return (
+                <li key={`${field}-${player.id}`}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    className={`player-picker__option${isSelected ? " player-picker__option--selected" : ""}`}
+                    onClick={() => handleSelect(String(player.id))}
+                  >
+                    <span className="player-picker__option-icon-wrap" aria-hidden="true">
+                      <RoleIcon role={player.role} className="player-picker__option-icon" />
+                    </span>
+                    <span className="player-picker__option-copy">
+                      <strong>{player.fullName}</strong>
+                      <span>{player.teamCode} - {getRoleDisplayLabel(player.role)}</span>
+                    </span>
+                    <span className="player-picker__option-tag">{getRoleShortLabel(player.role)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+      {selectedPlayer ? (
+        <span className="player-choice-preview">
+          <span className="player-choice-preview__icon-wrap">
+            <RoleIcon role={selectedPlayer.role} className="player-choice-preview__icon" />
+          </span>
+          <span className="player-choice-preview__body">
+            <strong>{selectedPlayer.fullName}</strong>
+            <span>{selectedPlayer.teamCode} - {getRoleDisplayLabel(selectedPlayer.role)}</span>
+          </span>
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 export function PredictionPanel({ match }: { match: MatchDetail }) {
@@ -128,11 +345,19 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
     if (successMessage) {
       setSuccessMessage(null);
     }
+    if (error) {
+      setError(null);
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!token) {
+      return;
+    }
+
+    if (!form.predictedWinnerTeamId || !form.predictedTossWinnerTeamId || !form.predictedTeam1Score || !form.predictedTeam2Score || playerPredictionFields.some((field) => !form[field])) {
+      setError("Please complete all team, player, and score predictions before submitting.");
       return;
     }
 
@@ -177,15 +402,14 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
 
   function renderPlayerSelect(label: string, field: keyof PredictionFormState) {
     return (
-      <label className="field">
-        <span className="field__label">{label}</span>
-        <select className="input" value={form[field]} onChange={(event: ChangeEvent<HTMLSelectElement>) => updateField(field, event.target.value)} required disabled={loading || saving || formLocked}>
-          <option value="">Select player</option>
-          {playerOptions.map((player) => (
-            <option key={`${field}-${player.id}`} value={player.id}>{player.fullName} ({player.teamCode})</option>
-          ))}
-        </select>
-      </label>
+      <PlayerPicker
+        label={label}
+        field={field}
+        value={form[field]}
+        options={playerOptions}
+        disabled={loading || saving || formLocked}
+        onChange={updateField}
+      />
     );
   }
 
@@ -197,7 +421,7 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
           <h2 className="section-title">Make your match prediction</h2>
           <p className="muted">Predictions can be created or updated only before the match starts. Team and player selections are always validated on the backend.</p>
         </div>
-        {prediction ? <div className="inline-summary inline-summary--success"><strong>{prediction.isLocked ? "Prediction submitted" : "Prediction ready"}</strong><span>Last updated {formatDate(prediction.updatedAt)} • {match.team1.code} {prediction.predictedTeam1Score} / {match.team2.code} {prediction.predictedTeam2Score}</span></div> : null}
+        {prediction ? <div className="inline-summary inline-summary--success"><strong>{prediction.isLocked ? "Prediction submitted" : "Prediction ready"}</strong><span>Last updated {formatDate(prediction.updatedAt)} - {match.team1.code} {prediction.predictedTeam1Score} / {match.team2.code} {prediction.predictedTeam2Score}</span></div> : null}
         {formLocked ? <div className="inline-summary inline-summary--warning"><strong>Prediction closed for this match</strong><span>{lockMessage}</span></div> : null}
       </div>
       {loading ? <p className="muted">Loading your prediction...</p> : null}
@@ -228,9 +452,22 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
                 </div>
               </section>
               <section className="form-section">
-                <div>
-                  <h3 className="section-title">Player predictions</h3>
-                  <p className="muted">Choose from the official squad loaded for this match.</p>
+                <div className="stack stack--tight">
+                  <div>
+                    <h3 className="section-title">Player predictions</h3>
+                    <p className="muted">Choose from the official squad loaded for this match.</p>
+                  </div>
+                  <div className="role-legend" aria-label="Player role legend">
+                    {roleLegend.map((item) => (
+                      <span key={item.key} className="role-pill" title={item.label}>
+                        <span className="role-pill__icon" aria-hidden="true">
+                          <RoleIcon role={item.key} className="role-pill__icon-svg" />
+                        </span>
+                        <span>{item.label}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="muted role-legend__hint">Each player picker now shows role icon, player name, and team name directly inside the dropdown.</p>
                 </div>
                 <div className="prediction-form__grid">
                   {renderPlayerSelect("Highest run scorer", "highestRunScorerPlayerId")}
@@ -263,3 +500,4 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
     </section>
   );
 }
+

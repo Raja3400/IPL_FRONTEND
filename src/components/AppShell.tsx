@@ -4,7 +4,8 @@ import { NavLink, Outlet } from "react-router-dom";
 
 const publicNavItems = [
   { to: "/", label: "Arena" },
-  { to: "/matches", label: "Matches" }
+  { to: "/matches", label: "Matches" },
+  { to: "/rules", label: "Rules" }
 ];
 
 export function AppShell() {
@@ -107,4 +108,3 @@ export function AppShell() {
     </div>
   );
 }
-

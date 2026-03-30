@@ -10,6 +10,7 @@ import { MatchesPage } from "../pages/MatchesPage";
 import { MyPredictionsPage } from "../pages/MyPredictionsPage";
 import { PredictionScorePage } from "../pages/PredictionScorePage";
 import { ProfilePage } from "../pages/ProfilePage";
+import { RulesPage } from "../pages/RulesPage";
 import { StatusPage } from "../pages/StatusPage";
 import { TournamentLeaderboardPage } from "../pages/TournamentLeaderboardPage";
 import { VerifyOtpPage } from "../pages/VerifyOtpPage";
@@ -30,6 +31,10 @@ export const router = createBrowserRouter([
       {
         path: "matches",
         element: <MatchesPage />
+      },
+      {
+        path: "rules",
+        element: <RulesPage />
       },
       {
         path: "matches/:id",

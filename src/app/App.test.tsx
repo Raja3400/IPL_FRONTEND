@@ -32,6 +32,7 @@ describe("AppShell", () => {
     expect(screen.getByText(/IPL PREDICTOR/i)).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Primary navigation" })).toBeInTheDocument();
     expect(screen.getByText("Matches")).toBeInTheDocument();
+    expect(screen.getByText("Rules")).toBeInTheDocument();
     expect(screen.getByText("Login")).toBeInTheDocument();
   });
 });
