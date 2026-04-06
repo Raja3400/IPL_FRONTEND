@@ -167,27 +167,56 @@ function getRoleDisplayLabel(role: RoleKey) {
 
 function PlayerPicker({ label, field, value, options, disabled, onChange }: PlayerPickerProps) {
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const selectedPlayer = value ? options.find((player) => String(player.id) === value) ?? null : null;
-  const labelId = `${field}-label`;
   const listboxId = `${field}-listbox`;
+
+  const filteredOptions = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return options;
+    }
+
+    return options.filter((player) => {
+      const searchableValue = `${player.fullName} ${player.teamCode} ${getRoleDisplayLabel(player.role)} ${getRoleShortLabel(player.role)}`.toLowerCase();
+      return searchableValue.includes(normalizedQuery);
+    });
+  }, [options, searchQuery]);
 
   useEffect(() => {
     if (disabled && open) {
       setOpen(false);
+      setSearchQuery("");
     }
   }, [disabled, open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [open]);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
+        setSearchQuery("");
       }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setOpen(false);
+        setSearchQuery("");
       }
     }
 
@@ -200,14 +229,26 @@ function PlayerPicker({ label, field, value, options, disabled, onChange }: Play
     };
   }, []);
 
+  function handleToggle() {
+    if (open) {
+      setOpen(false);
+      setSearchQuery("");
+      return;
+    }
+
+    setOpen(true);
+    setSearchQuery("");
+  }
+
   function handleSelect(playerId: string) {
     onChange(field, playerId);
     setOpen(false);
+    setSearchQuery("");
   }
 
   return (
     <div className="field player-picker" ref={rootRef}>
-      <span className="field__label" id={labelId}>{label}</span>
+      <span className="field__label">{label}</span>
       <button
         type="button"
         className={`input player-picker__trigger${open ? " player-picker__trigger--open" : ""}`}
@@ -215,7 +256,7 @@ function PlayerPicker({ label, field, value, options, disabled, onChange }: Play
         aria-expanded={open}
         aria-label={`${label}: ${selectedPlayer ? `${selectedPlayer.fullName}, ${selectedPlayer.teamCode}, ${getRoleDisplayLabel(selectedPlayer.role)}` : "Select player"}`}
         aria-controls={listboxId}
-        onClick={() => setOpen((current) => !current)}
+        onClick={handleToggle}
         disabled={disabled}
       >
         {selectedPlayer ? (
@@ -235,30 +276,49 @@ function PlayerPicker({ label, field, value, options, disabled, onChange }: Play
       </button>
       {open ? (
         <div className="player-picker__dropdown" role="presentation">
+          <div className="player-picker__search-shell">
+            <input
+              ref={searchInputRef}
+              className="input player-picker__search-input"
+              type="text"
+              inputMode="search"
+              autoComplete="off"
+              placeholder="Search player or team"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              aria-label={`${label} search`}
+            />
+          </div>
           <ul className="player-picker__list" role="listbox" id={listboxId} aria-label={label}>
-            {options.map((player) => {
-              const isSelected = String(player.id) === value;
-              return (
-                <li key={`${field}-${player.id}`}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    className={`player-picker__option${isSelected ? " player-picker__option--selected" : ""}`}
-                    onClick={() => handleSelect(String(player.id))}
-                  >
-                    <span className="player-picker__option-icon-wrap" aria-hidden="true">
-                      <RoleIcon role={player.role} className="player-picker__option-icon" />
-                    </span>
-                    <span className="player-picker__option-copy">
-                      <strong>{player.fullName}</strong>
-                      <span>{player.teamCode} - {getRoleDisplayLabel(player.role)}</span>
-                    </span>
-                    <span className="player-picker__option-tag">{getRoleShortLabel(player.role)}</span>
-                  </button>
-                </li>
-              );
-            })}
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((player) => {
+                const isSelected = String(player.id) === value;
+                return (
+                  <li key={`${field}-${player.id}`}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      className={`player-picker__option${isSelected ? " player-picker__option--selected" : ""}`}
+                      onClick={() => handleSelect(String(player.id))}
+                    >
+                      <span className="player-picker__option-icon-wrap" aria-hidden="true">
+                        <RoleIcon role={player.role} className="player-picker__option-icon" />
+                      </span>
+                      <span className="player-picker__option-copy">
+                        <strong>{player.fullName}</strong>
+                        <span>{player.teamCode} - {getRoleDisplayLabel(player.role)}</span>
+                      </span>
+                      <span className="player-picker__option-tag">{getRoleShortLabel(player.role)}</span>
+                    </button>
+                  </li>
+                );
+              })
+            ) : (
+              <li>
+                <div className="player-picker__empty-state">No players found for &quot;{searchQuery}&quot;.</div>
+              </li>
+            )}
           </ul>
         </div>
       ) : null}
@@ -467,7 +527,7 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
                       </span>
                     ))}
                   </div>
-                  <p className="muted role-legend__hint">Each player picker now shows role icon, player name, and team name directly inside the dropdown.</p>
+                  <p className="muted role-legend__hint">Each player picker now opens a searchable list. On mobile, tapping a picker focuses the search box so the keyboard opens right away.</p>
                 </div>
                 <div className="prediction-form__grid">
                   {renderPlayerSelect("Highest run scorer", "highestRunScorerPlayerId")}
@@ -500,4 +560,3 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
     </section>
   );
 }
-

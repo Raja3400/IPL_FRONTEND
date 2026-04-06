@@ -888,6 +888,27 @@ button, input, select, textarea { font: inherit; outline: none; }
   position: relative;
 }
 
+.player-picker__search-shell {
+  margin-bottom: 0.45rem;
+}
+
+.player-picker__search-input {
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.player-picker__empty-state {
+  padding: 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: normal;
+}
 .player-picker__list {
   list-style: none;
   margin: 0;
@@ -951,5 +972,6 @@ button, input, select, textarea { font: inherit; outline: none; }
     margin-left: 2.95rem;
   }
 }
+
 
 
