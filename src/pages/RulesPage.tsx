@@ -7,7 +7,7 @@ const scoringRows = [
   ["Most fours", "10 points"],
   ["Most catches", "10 points"],
   ["Man of the match", "10 points"],
-  ["Longest six", "5 points"],
+  ["Best economical bowler", "5 points"],
   ["Best striker", "10 points"]
 ];
 
@@ -71,10 +71,13 @@ const tiebreakSections = [
     ]
   },
   {
-    title: "Best Striker",
+    title: "Best economical bowler",
     points: [
-      "Player with atleast 20 runs"
-      
+      "Bowler with lower economy wins",
+      "If economy is equal, more wickets gets priority",
+      "If still equal, fewer runs conceded gets priority",
+      "If still equal, more balls bowled gets priority",
+      "If still equal, a deterministic fallback is used"
     ]
   }
 ];

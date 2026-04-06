@@ -51,11 +51,13 @@ const existingPrediction = {
   mostFoursPlayer: mockMatch.players[2],
   mostCatchesPlayer: mockMatch.players[3],
   manOfMatchPlayer: mockMatch.players[2],
-  longestSixPlayer: mockMatch.players[0],
+  bestEconomyBowlerPlayer: mockMatch.players[1],
+  longestSixPlayer: mockMatch.players[1],
   bestStrikerPlayer: mockMatch.players[2],
   predictedTeam1Score: 182,
   predictedTeam2Score: 176,
   isLocked: false,
+  isTossWinnerLocked: false,
   pointsAwarded: 0,
   scoredAt: null,
   submittedAt: "2026-03-20T10:00:00Z",
@@ -159,8 +161,8 @@ describe("PredictionPanel", () => {
     await user.click(within(panel).getByRole("button", { name: /^Man of the match: Select player$/i }));
     await user.click(within(panel).getByRole("option", { name: /Ruturaj Gaikwad/i }));
 
-    await user.click(within(panel).getByRole("button", { name: /^Longest six: Select player$/i }));
-    await user.click(within(panel).getByRole("option", { name: /Rohit Sharma/i }));
+    await user.click(within(panel).getByRole("button", { name: /^Best economical bowler: Select player$/i }));
+    await user.click(within(panel).getByRole("option", { name: /Jasprit Bumrah/i }));
 
     await user.click(within(panel).getByRole("button", { name: /^Best striker: Select player$/i }));
     await user.click(within(panel).getByRole("option", { name: /Ruturaj Gaikwad/i }));

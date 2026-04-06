@@ -15,7 +15,7 @@ type PredictionFormState = {
   mostFoursPlayerId: string;
   mostCatchesPlayerId: string;
   manOfMatchPlayerId: string;
-  longestSixPlayerId: string;
+  bestEconomyBowlerPlayerId: string;
   bestStrikerPlayerId: string;
   predictedTeam1Score: string;
   predictedTeam2Score: string;
@@ -41,7 +41,7 @@ const emptyForm: PredictionFormState = {
   mostFoursPlayerId: "",
   mostCatchesPlayerId: "",
   manOfMatchPlayerId: "",
-  longestSixPlayerId: "",
+  bestEconomyBowlerPlayerId: "",
   bestStrikerPlayerId: "",
   predictedTeam1Score: "",
   predictedTeam2Score: ""
@@ -54,7 +54,7 @@ const playerPredictionFields: Array<keyof PredictionFormState> = [
   "mostFoursPlayerId",
   "mostCatchesPlayerId",
   "manOfMatchPlayerId",
-  "longestSixPlayerId",
+  "bestEconomyBowlerPlayerId",
   "bestStrikerPlayerId"
 ];
 
@@ -114,14 +114,14 @@ const roleLegend: Array<{ key: NonNullable<RoleKey>; label: string }> = [
 function toFormState(prediction: PredictionResponse): PredictionFormState {
   return {
     predictedWinnerTeamId: String(prediction.predictedWinnerTeam.id),
-    predictedTossWinnerTeamId: String(prediction.predictedTossWinnerTeam.id),
+    predictedTossWinnerTeamId: prediction.predictedTossWinnerTeam ? String(prediction.predictedTossWinnerTeam.id) : "",
     highestRunScorerPlayerId: String(prediction.highestRunScorerPlayer.id),
     highestWicketTakerPlayerId: String(prediction.highestWicketTakerPlayer.id),
     mostSixesPlayerId: String(prediction.mostSixesPlayer.id),
     mostFoursPlayerId: String(prediction.mostFoursPlayer.id),
     mostCatchesPlayerId: String(prediction.mostCatchesPlayer.id),
     manOfMatchPlayerId: String(prediction.manOfMatchPlayer.id),
-    longestSixPlayerId: String(prediction.longestSixPlayer.id),
+    bestEconomyBowlerPlayerId: String((prediction.bestEconomyBowlerPlayer ?? prediction.longestSixPlayer).id),
     bestStrikerPlayerId: String(prediction.bestStrikerPlayer.id),
     predictedTeam1Score: String(prediction.predictedTeam1Score),
     predictedTeam2Score: String(prediction.predictedTeam2Score)
@@ -163,6 +163,13 @@ function getRoleDisplayLabel(role: RoleKey) {
     default:
       return "Role not specified";
   }
+}
+
+function resolveMatchStartTimestamp(match: MatchDetail) {
+  if (match.timezone === "Asia/Kolkata" || match.timezone === "Asia/Calcutta") {
+    return Date.parse(`${match.matchStartTime}+05:30`);
+  }
+  return Date.parse(match.matchStartTime);
 }
 
 function PlayerPicker({ label, field, value, options, disabled, onChange }: PlayerPickerProps) {
@@ -379,6 +386,8 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
   const teamOptions = useMemo(() => [match.team1, match.team2], [match.team1, match.team2]);
   const playerOptions = match.players;
   const formLocked = prediction?.isLocked || match.status !== "UPCOMING";
+  const tossLockTimestamp = resolveMatchStartTimestamp(match) - (30 * 60 * 1000);
+  const tossWinnerLocked = formLocked || prediction?.isTossWinnerLocked || Date.now() >= tossLockTimestamp;
   const lockMessage = match.status !== "UPCOMING"
     ? `Prediction closed for this match because it is currently ${match.status.toLowerCase()}.`
     : "Prediction closed for this match. Predictions are locked for this match once the scheduled start time is reached.";
@@ -416,22 +425,27 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
       return;
     }
 
-    if (!form.predictedWinnerTeamId || !form.predictedTossWinnerTeamId || !form.predictedTeam1Score || !form.predictedTeam2Score || playerPredictionFields.some((field) => !form[field])) {
+    if (!form.predictedWinnerTeamId || !form.predictedTeam1Score || !form.predictedTeam2Score || playerPredictionFields.some((field) => !form[field])) {
       setError("Please complete all team, player, and score predictions before submitting.");
+      return;
+    }
+
+    if (!tossWinnerLocked && !form.predictedTossWinnerTeamId) {
+      setError("Please choose the toss winner before the toss prediction window closes.");
       return;
     }
 
     const payload: PredictionRequest = {
       matchId: match.id,
       predictedWinnerTeamId: Number(form.predictedWinnerTeamId),
-      predictedTossWinnerTeamId: Number(form.predictedTossWinnerTeamId),
+      predictedTossWinnerTeamId: form.predictedTossWinnerTeamId ? Number(form.predictedTossWinnerTeamId) : null,
       highestRunScorerPlayerId: Number(form.highestRunScorerPlayerId),
       highestWicketTakerPlayerId: Number(form.highestWicketTakerPlayerId),
       mostSixesPlayerId: Number(form.mostSixesPlayerId),
       mostFoursPlayerId: Number(form.mostFoursPlayerId),
       mostCatchesPlayerId: Number(form.mostCatchesPlayerId),
       manOfMatchPlayerId: Number(form.manOfMatchPlayerId),
-      longestSixPlayerId: Number(form.longestSixPlayerId),
+      bestEconomyBowlerPlayerId: Number(form.bestEconomyBowlerPlayerId),
       bestStrikerPlayerId: Number(form.bestStrikerPlayerId),
       predictedTeam1Score: Number(form.predictedTeam1Score),
       predictedTeam2Score: Number(form.predictedTeam2Score)
@@ -479,10 +493,11 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
         <div>
           <p className="pill">Prediction</p>
           <h2 className="section-title">Make your match prediction</h2>
-          <p className="muted">Predictions can be created or updated only before the match starts. Team and player selections are always validated on the backend.</p>
+          <p className="muted">Predictions can be created or updated only before the match starts. Toss winner closes 30 minutes earlier, while the remaining fields stay open until the scheduled start time.</p>
         </div>
         {prediction ? <div className="inline-summary inline-summary--success"><strong>{prediction.isLocked ? "Prediction submitted" : "Prediction ready"}</strong><span>Last updated {formatDate(prediction.updatedAt)} - {match.team1.code} {prediction.predictedTeam1Score} / {match.team2.code} {prediction.predictedTeam2Score}</span></div> : null}
         {formLocked ? <div className="inline-summary inline-summary--warning"><strong>Prediction closed for this match</strong><span>{lockMessage}</span></div> : null}
+        {!formLocked && tossWinnerLocked ? <div className="inline-summary inline-summary--warning"><strong>Toss winner locked</strong><span>The toss winner field closes 30 minutes before match start. The remaining prediction fields are still open.</span></div> : null}
       </div>
       {loading ? <p className="muted">Loading your prediction...</p> : null}
       {!loading ? (
@@ -504,7 +519,7 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
                   </label>
                   <label className="field">
                     <span className="field__label">Toss winner</span>
-                    <select className="input" value={form.predictedTossWinnerTeamId} onChange={(event) => updateField("predictedTossWinnerTeamId", event.target.value)} required>
+                    <select className="input" value={form.predictedTossWinnerTeamId} onChange={(event) => updateField("predictedTossWinnerTeamId", event.target.value)} disabled={loading || saving || tossWinnerLocked} required={!tossWinnerLocked}>
                       <option value="">Select team</option>
                       {teamOptions.map((team) => <option key={`toss-${team.id}`} value={team.id}>{team.name}</option>)}
                     </select>
@@ -536,7 +551,7 @@ export function PredictionPanel({ match }: { match: MatchDetail }) {
                   {renderPlayerSelect("Most fours", "mostFoursPlayerId")}
                   {renderPlayerSelect("Most catches", "mostCatchesPlayerId")}
                   {renderPlayerSelect("Man of the match", "manOfMatchPlayerId")}
-                  {renderPlayerSelect("Longest six", "longestSixPlayerId")}
+                  {renderPlayerSelect("Best economical bowler", "bestEconomyBowlerPlayerId")}
                   {renderPlayerSelect("Best striker", "bestStrikerPlayerId")}
                 </div>
               </section>

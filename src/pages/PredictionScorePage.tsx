@@ -15,7 +15,8 @@ const breakdownLabels: Record<string, string> = {
   mostFours: "Most Fours",
   mostCatches: "Most Catches",
   manOfTheMatch: "Player of the Match",
-  longestSix: "Longest Six",
+  bestEconomyBowler: "Best Economical Bowler",
+  longestSix: "Best Economical Bowler",
   bestStriker: "Best Striker",
   team1Score: "Team 1 Score",
   team2Score: "Team 2 Score",
@@ -30,6 +31,7 @@ const playerBreakdownKeys = new Set([
   "mostFours",
   "mostCatches",
   "manOfTheMatch",
+  "bestEconomyBowler",
   "longestSix",
   "bestStriker"
 ]);
@@ -117,6 +119,7 @@ export function PredictionScorePage() {
       score?.myPrediction?.mostFoursPlayer,
       score?.myPrediction?.mostCatchesPlayer,
       score?.myPrediction?.manOfMatchPlayer,
+      score?.myPrediction?.bestEconomyBowlerPlayer,
       score?.myPrediction?.longestSixPlayer,
       score?.myPrediction?.bestStrikerPlayer,
       score?.actualResult?.highestRunScorerPlayer,
@@ -125,6 +128,7 @@ export function PredictionScorePage() {
       score?.actualResult?.mostFoursPlayer,
       score?.actualResult?.mostCatchesPlayer,
       score?.actualResult?.manOfMatchPlayer,
+      score?.actualResult?.bestEconomyBowlerPlayer,
       score?.actualResult?.longestSixPlayer,
       score?.actualResult?.bestStrikerPlayer
     ];
@@ -149,7 +153,7 @@ export function PredictionScorePage() {
       ["Most Fours", score.myPrediction?.mostFoursPlayer?.fullName],
       ["Most Catches", score.myPrediction?.mostCatchesPlayer?.fullName],
       ["POTM", score.myPrediction?.manOfMatchPlayer?.fullName],
-      ["Longest Six", score.myPrediction?.longestSixPlayer?.fullName],
+      ["Best Economical Bowler", score.myPrediction?.bestEconomyBowlerPlayer?.fullName ?? score.myPrediction?.longestSixPlayer?.fullName],
       ["Best Striker", score.myPrediction?.bestStrikerPlayer?.fullName],
       [`${team1Code} Score`, score.myPrediction?.team1Score],
       [`${team2Code} Score`, score.myPrediction?.team2Score]
@@ -167,7 +171,7 @@ export function PredictionScorePage() {
       ["Most Fours", score.actualResult?.mostFoursPlayer?.fullName],
       ["Most Catches", score.actualResult?.mostCatchesPlayer?.fullName],
       ["POTM", score.actualResult?.manOfMatchPlayer?.fullName],
-      ["Longest Six", score.actualResult?.longestSixPlayer?.fullName],
+      ["Best Economical Bowler", score.actualResult?.bestEconomyBowlerPlayer?.fullName ?? score.actualResult?.longestSixPlayer?.fullName],
       ["Best Striker", score.actualResult?.bestStrikerPlayer?.fullName],
       [`${team1Code} Score`, score.actualResult?.team1Score],
       [`${team2Code} Score`, score.actualResult?.team2Score]

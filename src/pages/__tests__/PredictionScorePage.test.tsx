@@ -40,8 +40,9 @@ describe("PredictionScorePage", () => {
         mostFoursPlayer: { id: 6, fullName: "Tilak Varma", teamId: 1, teamCode: "MI", role: "BATTER" },
         mostCatchesPlayer: { id: 17, fullName: "Ruturaj Gaikwad", teamId: 2, teamCode: "CSK", role: "BATTER" },
         manOfMatchPlayer: { id: 18, fullName: "MS Dhoni", teamId: 2, teamCode: "CSK", role: "WICKET_KEEPER" },
-        longestSixPlayer: { id: 3, fullName: "Hardik Pandya", teamId: 1, teamCode: "MI", role: "ALL_ROUNDER" },
-        bestStrikerPlayer: { id: 4, fullName: "Jasprit Bumrah", teamId: 1, teamCode: "MI", role: "BOWLER" },
+        bestEconomyBowlerPlayer: { id: 4, fullName: "Jasprit Bumrah", teamId: 1, teamCode: "MI", role: "BOWLER" },
+        longestSixPlayer: { id: 4, fullName: "Jasprit Bumrah", teamId: 1, teamCode: "MI", role: "BOWLER" },
+        bestStrikerPlayer: { id: 5, fullName: "Suryakumar Yadav", teamId: 1, teamCode: "MI", role: "BATTER" },
         team1Score: 182,
         team2Score: 176
       },
@@ -55,13 +56,15 @@ describe("PredictionScorePage", () => {
         mostFoursPlayer: { id: 6, fullName: "Tilak Varma", teamId: 1, teamCode: "MI", role: "BATTER" },
         mostCatchesPlayer: { id: 17, fullName: "Ruturaj Gaikwad", teamId: 2, teamCode: "CSK", role: "BATTER" },
         manOfMatchPlayer: { id: 18, fullName: "MS Dhoni", teamId: 2, teamCode: "CSK", role: "WICKET_KEEPER" },
-        longestSixPlayer: { id: 3, fullName: "Hardik Pandya", teamId: 1, teamCode: "MI", role: "ALL_ROUNDER" },
-        bestStrikerPlayer: { id: 4, fullName: "Jasprit Bumrah", teamId: 1, teamCode: "MI", role: "BOWLER" },
+        bestEconomyBowlerPlayer: { id: 4, fullName: "Jasprit Bumrah", teamId: 1, teamCode: "MI", role: "BOWLER" },
+        longestSixPlayer: { id: 4, fullName: "Jasprit Bumrah", teamId: 1, teamCode: "MI", role: "BOWLER" },
+        bestStrikerPlayer: { id: 5, fullName: "Suryakumar Yadav", teamId: 1, teamCode: "MI", role: "BATTER" },
         team1Score: 182,
         team2Score: 176
       },
       scoreBreakdown: {
         winner: { predicted: 1, actual: 1, matched: true, points: 10 },
+        bestEconomyBowler: { predicted: 4, actual: 4, matched: true, points: 5 },
         team1Score: { predicted: 182, actual: 182, difference: 0, points: 25 }
       }
     });
@@ -78,6 +81,7 @@ describe("PredictionScorePage", () => {
 
     await waitFor(() => expect(screen.getByText("150")).toBeInTheDocument());
     expect(screen.getByText(/Mumbai Indians vs Chennai Super Kings/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Best Economical Bowler/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/MI Score/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/CSK Score/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Actual Result/i)).toBeInTheDocument();
